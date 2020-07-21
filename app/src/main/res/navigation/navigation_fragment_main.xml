@@ -8,7 +8,7 @@
     <fragment
         android:id="@+id/navigation_fragment_memo"
         android:name="com.eliot.notebook.memo.ui.MemoFragment"
-        android:label="memo"
+        android:label="备忘录"
         tools:layout="@layout/fragment_memo">
 
     </fragment>
@@ -16,7 +16,7 @@
     <fragment
         android:id="@+id/navigation_fragment_diary"
         android:name="com.eliot.notebook.diary.ui.DiaryFragment"
-        android:label="diary"
+        android:label="日记"
         tools:layout="@layout/fragment_diary">
 
     </fragment>

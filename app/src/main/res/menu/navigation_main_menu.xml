@@ -3,10 +3,10 @@
     <group android:checkableBehavior="single">
         <item android:id="@+id/navigation_fragment_memo"
             android:icon="@drawable/ic_memo"
-            android:title="memo "/>
+            android:title="备忘录 "/>
 
         <item android:id="@+id/navigation_fragment_diary"
             android:icon="@drawable/ic_diary"
-            android:title="diary "/>
+            android:title="日记 "/>
     </group>
 </menu>
