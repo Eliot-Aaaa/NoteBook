@@ -19,7 +19,7 @@ import java.util.List;
  * @ProjectName: NoteBook
  * @Package: com.eliot.notebook.memo.ui
  * @ClassName: MemoItemAdapter
- * @Description: 类描述
+ * @Description: 备忘录概述列表ListView自定义adapter
  * @Author: Eliot-Aaaa
  * @CreateDate: 2020/7/21 11:29
  */
@@ -34,10 +34,13 @@ public class MemoItemAdapter extends ArrayAdapter
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent)
     {
-        String str = ((Memo) getItem(position)).getContent();
+        String content = ((Memo) getItem(position)).getContent();
+        String time = ((Memo)getItem(position)).getModifyTime();
         View root = LayoutInflater.from(getContext()).inflate(R.layout.memo_item, null);
-        TextView textView = root.findViewById(R.id.item_memo_text);
-        textView.setText(str);
+        TextView content_text = root.findViewById(R.id.item_memo_content_text);
+        content_text.setText(content);
+        TextView time_text = root.findViewById(R.id.item_memo_time_text);
+        time_text.setText(time);
         return root;
     }
 }
