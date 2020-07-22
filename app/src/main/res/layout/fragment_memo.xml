@@ -21,4 +21,11 @@
         android:layout_alignParentBottom="true"
         android:src="@android:drawable/ic_input_add" />
 
+    <TextView
+        android:id="@+id/memo_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="暂时没有备忘录~"/>
+
 </RelativeLayout>

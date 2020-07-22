@@ -1,5 +1,7 @@
 package com.eliot.notebook.memo.model;
 
+import java.io.Serializable;
+
 /**
  * @ProjectName: NoteBook
  * @Package: com.eliot.notebook.memo.model
@@ -8,12 +10,13 @@ package com.eliot.notebook.memo.model;
  * @Author: Eliot-Aaaa
  * @CreateDate: 2020/7/21 15:46
  */
-public class Memo
+public class Memo implements Serializable
 {
-    private String modifyTime;
-    private String content;
+    private long modifyTime;                    //修改时间
+    private String content;                     //内容
+    private int id;                             //在数据库的id
 
-    public Memo(String modifyTime, String content)
+    public Memo(long modifyTime, String content)
     {
         this.modifyTime = modifyTime;
         this.content = content;
@@ -21,12 +24,12 @@ public class Memo
 
     public Memo(){}
 
-    public void setModifyTime(String modifyTime)
+    public void setModifyTime(long modifyTime)
     {
         this.modifyTime = modifyTime;
     }
 
-    public String getModifyTime()
+    public long getModifyTime()
     {
         return modifyTime;
     }
@@ -39,5 +42,15 @@ public class Memo
     public String getContent()
     {
         return content;
+    }
+
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+
+    public int getId()
+    {
+        return id;
     }
 }
