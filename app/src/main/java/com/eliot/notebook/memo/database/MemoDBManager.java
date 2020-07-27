@@ -3,6 +3,7 @@ package com.eliot.notebook.memo.database;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.eliot.notebook.common.database.DBHelper;
 import com.eliot.notebook.common.database.IDBManager;
@@ -49,7 +50,7 @@ public class MemoDBManager implements IDBManager<Memo>
     @Override
     public void delete(Memo object)
     {
-        String sql = "DELETE FROM " + TABLE_NAME + " WHERE time=\'" + object.getModifyTime() + "\' AND content=\'" + object.getContent() + "\' AND _id=" + object.getId();
+        String sql = "DELETE FROM " + TABLE_NAME + " WHERE time=" + object.getModifyTime() + " AND content=\'" + object.getContent() + "\' AND _id=" + object.getId();
         db.execSQL(sql);
     }
 
