@@ -5,6 +5,9 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -37,6 +40,8 @@ public class MemoFragment extends Fragment
     IDBManager mDBManager;              //数据库操作对象
     ListView memo_list;                 //备忘录列表ListView
     TextView memoTextView;              //没有备忘录记录时的提示文本
+
+    MemoItemAdapter mAdapter;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState)
@@ -59,7 +64,13 @@ public class MemoFragment extends Fragment
             {
                 Memo memo = (Memo) parent.getItemAtPosition(position);
                 mDBManager.delete(memo);
-                updateList();
+                memoList.remove(position);
+                mAdapter.notifyDataSetChanged();
+                if (memoList.size() <= 0)
+                {
+                    memo_list.setVisibility(View.GONE);
+                    memoTextView.setVisibility(View.VISIBLE);
+                }
                 return true;
             }
         });
@@ -112,8 +123,8 @@ public class MemoFragment extends Fragment
         memoList = mDBManager.query(null, IDBManager.SORT_DESC);
         if (memoList != null && memoList.size() > 0)
         {
-            MemoItemAdapter adapter = new MemoItemAdapter(getContext(), R.layout.memo_item, memoList);
-            memo_list.setAdapter(adapter);
+            mAdapter = new MemoItemAdapter(getContext(), R.layout.memo_item, memoList);
+            memo_list.setAdapter(mAdapter);
             memo_list.setVisibility(View.VISIBLE);
             memoTextView.setVisibility(View.GONE);
         }else
@@ -122,6 +133,14 @@ public class MemoFragment extends Fragment
             memo_list.setVisibility(View.GONE);
             memoTextView.setVisibility(View.VISIBLE);
         }
+
+        //为listview刷新添加布局显示动画
+        Animation animation= AnimationUtils.loadAnimation(getContext(), R.anim.list_item_anim);         //获取对应动画
+        LayoutAnimationController controller = new LayoutAnimationController(animation);                //得到一个动画对应的LayoutAnimationController对象；
+        controller.setOrder(LayoutAnimationController.ORDER_NORMAL);                                    //设置控件显示的顺序；
+        controller.setDelay((float) 0.3);                                                               //设置控件显示间隔时间；
+        memo_list.setLayoutAnimation(controller);                                                       //为ListView设置LayoutAnimationController属性；
+        memo_list.startLayoutAnimation();                                                               //启动布局动画
     }
 
 }
