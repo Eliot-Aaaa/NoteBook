@@ -15,6 +15,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.eliot.notebook.R;
 import com.eliot.notebook.common.database.IDBManager;
+import com.eliot.notebook.memo.database.ContentCache;
 import com.eliot.notebook.memo.database.MemoDBManager;
 import com.eliot.notebook.common.Constants;
 import com.eliot.notebook.memo.model.Memo;
@@ -41,6 +42,10 @@ public class MemoContentActivity extends AppCompatActivity
     String originalContent;
     String modifyContent;
     boolean showingSaveButton;                         //是否正在显示保存按钮可用，true为正在显示可用，false为显示不可用
+
+    ContentCache cache;                                 //内容缓冲类对象
+
+    boolean showingUndoButton, showingRedoButton;       //是否正在显示撤销和重做的按钮可用，true为正在显示可用，false为显示不可用
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState)
@@ -69,6 +74,8 @@ public class MemoContentActivity extends AppCompatActivity
             modifyContent = originalContent;
         }
         showingSaveButton = false;                                  //初始默认不可点击保存按钮
+        showingUndoButton = false;                                  //初始默认不可点击撤销按钮
+        showingRedoButton = false;                                  //初始默认不可点击重做按钮
 
         //为EditText控件添加文本监视器，当文本发生变化时回调
         content_edit.addTextChangedListener(contentTextWatcher);
@@ -79,6 +86,11 @@ public class MemoContentActivity extends AppCompatActivity
         setSupportActionBar(memo_content_tool_bar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);      //设置显示系统自带返回键
         getSupportActionBar().setHomeButtonEnabled(true);           //设置自带返回键可用
+
+        //内容缓冲初始化
+        cache = ContentCache.getInstance();                         //获取对象实例
+        cache.registerEditText(content_edit);                       //将编辑框注册
+        cache.initCache(originalContent);                           //缓冲区数据初始化
 
     }
 
@@ -101,9 +113,11 @@ public class MemoContentActivity extends AppCompatActivity
                 break;
             //撤销上一步修改按钮
             case R.id.memo_content_undo:
+                cache.undo();
                 break;
             //重做下一步修改按钮
             case R.id.memo_content_redo:
+                cache.redo();
                 break;
             //保存按钮
             case R.id.memo_content_save:
@@ -125,6 +139,10 @@ public class MemoContentActivity extends AppCompatActivity
     public boolean onPrepareOptionsMenu(Menu menu) {
         //设置保存按钮的显示状态：可用或者不可用
         menu.findItem(R.id.memo_content_save).setEnabled(showingSaveButton);
+        //设置撤销按钮的显示状态：可用或者不可用
+        menu.findItem(R.id.memo_content_undo).setEnabled(showingUndoButton);
+        //设置重做按钮的显示状态：可用或者不可用
+        menu.findItem(R.id.memo_content_redo).setEnabled(showingRedoButton);
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -132,12 +150,11 @@ public class MemoContentActivity extends AppCompatActivity
     TextWatcher contentTextWatcher = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
         }
 
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count) {
-
+            cache.add(s.toString());                                    //将修改后的内容添加进缓冲
         }
 
         @Override
@@ -150,6 +167,19 @@ public class MemoContentActivity extends AppCompatActivity
             if (showingSaveButton != canShowSave)
             {
                 showingSaveButton = canShowSave;
+                invalidateOptionsMenu();
+            }
+
+            //当前撤销按钮显示状态与检测到是否可显示冲突时，更新UI
+            if (showingUndoButton != cache.canUndo)
+            {
+                showingUndoButton = cache.canUndo;
+                invalidateOptionsMenu();
+            }
+            //当前重做按钮显示状态与检测到是否可显示冲突时，更新UI
+            if (showingRedoButton != cache.canRedo)
+            {
+                showingRedoButton = cache.canRedo;
                 invalidateOptionsMenu();
             }
         }
