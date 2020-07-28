@@ -97,14 +97,6 @@ public class MemoFragment extends Fragment
         updateList();
     }
 
-    @Override
-    public void onDestroy()
-    {
-        super.onDestroy();
-        if (mDBManager != null)
-            mDBManager.close();
-    }
-
     AdapterView.OnItemClickListener mOnItemClickListener = new AdapterView.OnItemClickListener()
     {
         @Override
