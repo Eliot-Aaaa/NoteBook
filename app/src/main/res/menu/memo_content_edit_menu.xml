@@ -3,13 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/memo_content_undo"
         android:title="撤销"
+        android:icon="@drawable/ic_undo"
         app:showAsAction="always"/>
 
     <item android:id="@+id/memo_content_redo"
         android:title="重做"
+        android:icon="@drawable/ic_redo"
         app:showAsAction="always"/>
 
     <item android:id="@+id/memo_content_save"
         android:title="保存"
+        android:icon="@drawable/ic_save"
         app:showAsAction="always"/>
 </menu>
