@@ -5,6 +5,7 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/memo_list"
+        android:layoutAnimation="@anim/entrance_memo_list"
         android:paddingTop="?attr/actionBarSize"
         android:dividerHeight="10dp"
         android:paddingLeft="10dp"

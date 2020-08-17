@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
@@ -78,6 +79,12 @@ public class MemoFragment extends Fragment
             recyclerViewMemo.setAdapter(mMemoItemAdapter);
         }
 
+        //为List的Item添加动画效果
+        DefaultItemAnimator defaultItemAnimator = new DefaultItemAnimator();
+        defaultItemAnimator.setAddDuration(300);
+        defaultItemAnimator.setRemoveDuration(300);
+        recyclerViewMemo.setItemAnimator(defaultItemAnimator);
+
         return root;
     }
 
@@ -106,7 +113,10 @@ public class MemoFragment extends Fragment
             Memo memo = parent.getMemoList().get(position);
             mMemoDBManager.delete(memo);
             listMemo.remove(position);
-            mMemoItemAdapter.notifyDataSetChanged();
+
+            //调用notifyItemRemoved才能将删除的动画效果显示出来
+            mMemoItemAdapter.notifyItemRemoved(position);
+            mMemoItemAdapter.notifyItemRangeChanged(position, listMemo.size() - position);                  //需要添加这句，不然item位置错乱，会报数组边界溢出的错误
             if (listMemo.size() <= 0)
             {
                 recyclerViewMemo.setVisibility(View.GONE);

@@ -11,3 +11,5 @@ commit-4:添加数据库操作抽象接口，完善数据库操作，完善备�
 
 commit-11:将listView更换为RecyclerView，使用瀑布流StaggeredGridLayoutManager布局显示，添加自定义的item点击接口，实现点击进入文本编辑，
 	长按删除的效果；更换item的背景为灰色边框黑色字体显示，同时调整布局边距。效果见Pic/commit-11.gif
+
+commit-12:为RecyclerView添加进场动画，同时使用DefaultItemAnimator添加删除item的简单动画，效果见Pic/commit-12.gif
