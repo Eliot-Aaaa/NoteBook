@@ -3,10 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ListView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/memo_list"
         android:paddingTop="?attr/actionBarSize"
-        android:divider="@null"
         android:dividerHeight="10dp"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"

@@ -5,17 +5,14 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.view.animation.LayoutAnimationController;
-import android.widget.AdapterView;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.eliot.notebook.R;
 import com.eliot.notebook.common.database.IDBManager;
@@ -35,13 +32,13 @@ import java.util.List;
  */
 public class MemoFragment extends Fragment
 {
-    List<Memo> memoList;                //备忘录数据列表
-    ImageButton btn_memo_add;           //新建备忘录按钮
-    IDBManager mDBManager;              //数据库操作对象
-    ListView memo_list;                 //备忘录列表ListView
-    TextView memoTextView;              //没有备忘录记录时的提示文本
+    List<Memo> listMemo;                //备忘录数据列表
+    ImageButton imageButtonAddMemo;           //新建备忘录按钮
+    MemoDBManager mMemoDBManager;           //数据库操作对象
+    RecyclerView recyclerViewMemo;             //备忘录列表RecyclerView
+    TextView textViewNoMemoHint;              //没有备忘录记录时的提示文本
 
-    MemoItemAdapter mAdapter;
+    MemoItemAdapter mMemoItemAdapter;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState)
@@ -49,35 +46,14 @@ public class MemoFragment extends Fragment
         View root =inflater.inflate(R.layout.fragment_memo, container, false);
 
         //添加便签概略列表
-        memo_list = root.findViewById(R.id.memo_list);
-        memoTextView = root.findViewById(R.id.memo_text_view);
-        mDBManager = new MemoDBManager(getContext());
-        mDBManager.createTable();
-
-        //给listView添加点击事件监听
-        memo_list.setOnItemClickListener(mOnItemClickListener);
-        //给listView添加长按点击事件监听，长按时删除数据
-        memo_list.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener()
-        {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id)
-            {
-                Memo memo = (Memo) parent.getItemAtPosition(position);
-                mDBManager.delete(memo);
-                memoList.remove(position);
-                mAdapter.notifyDataSetChanged();
-                if (memoList.size() <= 0)
-                {
-                    memo_list.setVisibility(View.GONE);
-                    memoTextView.setVisibility(View.VISIBLE);
-                }
-                return true;
-            }
-        });
+        recyclerViewMemo = root.findViewById(R.id.memo_list);
+        textViewNoMemoHint = root.findViewById(R.id.memo_text_view);
+        mMemoDBManager = new MemoDBManager(getContext());
+        mMemoDBManager.createTable();
 
         //初始化新增备忘录按钮，并且设置点击事件：点击后跳转到编辑内容Activity
-        btn_memo_add = root.findViewById(R.id.btn_memo_add);
-        btn_memo_add.setOnClickListener(new View.OnClickListener()
+        imageButtonAddMemo = root.findViewById(R.id.btn_memo_add);
+        imageButtonAddMemo.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View v)
@@ -87,6 +63,21 @@ public class MemoFragment extends Fragment
             }
         });
 
+        //设置RecyclerView的layoutManager为StaggeredGridLayoutManager（瀑布流）
+        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+        recyclerViewMemo.setLayoutManager(layoutManager);
+
+        //获取数据库对象的指定List对象
+        listMemo = mMemoDBManager.getMemoList();
+        mMemoDBManager.query(null, IDBManager.SORT_DESC);               //查询数据库，更新数据库的List
+        //初始化列表显示
+        if (recyclerViewMemo != null && listMemo.size() > 0)
+        {
+            mMemoItemAdapter = new MemoItemAdapter(getContext(), listMemo);
+            mMemoItemAdapter.setOnClickListener(clickListener);
+            recyclerViewMemo.setAdapter(mMemoItemAdapter);
+        }
+
         return root;
     }
 
@@ -94,45 +85,52 @@ public class MemoFragment extends Fragment
     public void onResume()
     {
         super.onResume();
+        //在onResume调用更新列表函数
         updateList();
     }
 
-    AdapterView.OnItemClickListener mOnItemClickListener = new AdapterView.OnItemClickListener()
-    {
+    //添加item的点击事件（单击、长按）
+    MemoItemAdapter.ItemClickListener clickListener = new MemoItemAdapter.ItemClickListener() {
+
         @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id)
-        {
+        public void onSingleClick(MemoItemAdapter parent, int position) {
             //点击后直接跳转到内容编辑界面，并且将对应项的对象传递到下一个Activity
             Intent intent = new Intent(getContext(), MemoContentActivity.class);
-            intent.putExtra("memo", ((Memo)parent.getItemAtPosition(position)));
+            intent.putExtra("memo", parent.getMemoList().get(position));
             startActivity(intent);
+        }
+
+        @Override
+        public void onLongClick(MemoItemAdapter parent, int position) {
+            //获取点击的列表项对应的对象，并将其从数据库删除
+            Memo memo = parent.getMemoList().get(position);
+            mMemoDBManager.delete(memo);
+            listMemo.remove(position);
+            mMemoItemAdapter.notifyDataSetChanged();
+            if (listMemo.size() <= 0)
+            {
+                recyclerViewMemo.setVisibility(View.GONE);
+                textViewNoMemoHint.setVisibility(View.VISIBLE);
+            }
         }
     };
 
     //更新备忘录数据列表
     public void updateList()
     {
-        memoList = mDBManager.query(null, IDBManager.SORT_DESC);
-        if (memoList != null && memoList.size() > 0)
+        //调用数据库查询功能更新List
+        mMemoDBManager.query(null, IDBManager.SORT_DESC);
+        if (listMemo != null && listMemo.size() > 0)
         {
-            mAdapter = new MemoItemAdapter(getContext(), R.layout.memo_item, memoList);
-            memo_list.setAdapter(mAdapter);
-            memo_list.setVisibility(View.VISIBLE);
-            memoTextView.setVisibility(View.GONE);
+            mMemoItemAdapter.notifyDataSetChanged();                //使用notifyDataSetChanged更新列表，而不是重新setAdapter
+            recyclerViewMemo.setVisibility(View.VISIBLE);
+            textViewNoMemoHint.setVisibility(View.GONE);
         }else
         {
             //无数据时显示提示文本
-            memo_list.setVisibility(View.GONE);
-            memoTextView.setVisibility(View.VISIBLE);
+            recyclerViewMemo.setVisibility(View.GONE);
+            textViewNoMemoHint.setVisibility(View.VISIBLE);
         }
-
-        //为listview刷新添加布局显示动画
-        Animation animation= AnimationUtils.loadAnimation(getContext(), R.anim.list_item_anim);         //获取对应动画
-        LayoutAnimationController controller = new LayoutAnimationController(animation);                //得到一个动画对应的LayoutAnimationController对象；
-        controller.setOrder(LayoutAnimationController.ORDER_NORMAL);                                    //设置控件显示的顺序；
-        controller.setDelay((float) 0.3);                                                               //设置控件显示间隔时间；
-        memo_list.setLayoutAnimation(controller);                                                       //为ListView设置LayoutAnimationController属性；
-        memo_list.startLayoutAnimation();                                                               //启动布局动画
     }
 
 }

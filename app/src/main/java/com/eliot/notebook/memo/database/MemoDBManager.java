@@ -28,11 +28,14 @@ public class MemoDBManager implements IDBManager<Memo>
 
     private DBHelper helper;
     private SQLiteDatabase db;
+    private List<Memo> listMemo;
 
     public MemoDBManager(Context context)
     {
         helper = DBHelper.getInstance(context);
         db = helper.getWritableDatabase();
+        if (listMemo == null)
+            listMemo = new ArrayList<>();
     }
 
     @Override
@@ -64,7 +67,7 @@ public class MemoDBManager implements IDBManager<Memo>
     @Override
     public List<Memo> query(Memo object, int sortType)
     {
-        List<Memo> memoList = new ArrayList<>();
+        listMemo.clear();
         String sql = "SELECT * FROM memo";
         if (object != null)
         {
@@ -75,10 +78,10 @@ public class MemoDBManager implements IDBManager<Memo>
                 Memo memo = new Memo(object.getModifyTime(), object.getContent());
                 int id = c.getInt(c.getColumnIndex("_id"));
                 memo.setId(id);
-                memoList.add(memo);
+                listMemo.add(memo);
             }
             c.close();
-            return memoList;
+            return listMemo;
         }
 
         if (sortType == IDBManager.SORT_DESC)
@@ -90,10 +93,15 @@ public class MemoDBManager implements IDBManager<Memo>
             memo.setModifyTime(c.getLong(c.getColumnIndex("time")));
             memo.setContent(c.getString(c.getColumnIndex("content")));
             memo.setId(c.getInt(c.getColumnIndex("_id")));
-            memoList.add(memo);
+            listMemo.add(memo);
         }
         c.close();
-        return memoList;
+        return listMemo;
+    }
+
+    public List<Memo> getMemoList()
+    {
+        return listMemo;
     }
 
     @Override

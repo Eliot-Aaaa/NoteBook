@@ -1,0 +1,484 @@
+commit 5ebbca8b75e708f473e25fb232830c33edf59413
+Author: unknown <wuzhijun@zlgmcu.com>
+Date:   Mon Aug 17 17:19:20 2020 +0800
+
+    commit-10:将ListView更换成RecyclerView显示
+
+diff --git a/Pic/commit-10.gif b/Pic/commit-10.gif
+new file mode 100644
+index 0000000..2b10fba
+Binary files /dev/null and b/Pic/commit-10.gif differ
+diff --git a/README.md b/README.md
+index d025a93..3a60c2d 100644
+--- a/README.md
++++ b/README.md
+@@ -7,4 +7,7 @@ commit-2:添加备忘录基本逻辑，添加简易增加备忘录功能以及
+ 
+ commit-3:修改备忘录列表布局，添加显示修改时间
+ 
+-commit-4:添加数据库操作抽象接口，完善数据库操作，完善备忘录功能的新增、删除、修改、查询
+\ No newline at end of file
++commit-4:添加数据库操作抽象接口，完善数据库操作，完善备忘录功能的新增、删除、修改、查询
++
++commit-10:将listView更换为RecyclerView，使用瀑布流StaggeredGridLayoutManager布局显示，添加自定义的item点击接口，实现点击进入文本编辑，
++	长按删除的效果；更换item的背景为灰色边框黑色字体显示，同时调整布局边距。效果见Pic/commit-10.gif
+diff --git a/app/src/main/java/com/eliot/notebook/memo/database/MemoDBManager.java b/app/src/main/java/com/eliot/notebook/memo/database/MemoDBManager.java
+index 50ce262..4ed416d 100644
+--- a/app/src/main/java/com/eliot/notebook/memo/database/MemoDBManager.java
++++ b/app/src/main/java/com/eliot/notebook/memo/database/MemoDBManager.java
+@@ -28,11 +28,14 @@ public class MemoDBManager implements IDBManager<Memo>
+ 
+     private DBHelper helper;
+     private SQLiteDatabase db;
++    private List<Memo> listMemo;
+ 
+     public MemoDBManager(Context context)
+     {
+         helper = DBHelper.getInstance(context);
+         db = helper.getWritableDatabase();
++        if (listMemo == null)
++            listMemo = new ArrayList<>();
+     }
+ 
+     @Override
+@@ -64,7 +67,7 @@ public class MemoDBManager implements IDBManager<Memo>
+     @Override
+     public List<Memo> query(Memo object, int sortType)
+     {
+-        List<Memo> memoList = new ArrayList<>();
++        listMemo.clear();
+         String sql = "SELECT * FROM memo";
+         if (object != null)
+         {
+@@ -75,10 +78,10 @@ public class MemoDBManager implements IDBManager<Memo>
+                 Memo memo = new Memo(object.getModifyTime(), object.getContent());
+                 int id = c.getInt(c.getColumnIndex("_id"));
+                 memo.setId(id);
+-                memoList.add(memo);
++                listMemo.add(memo);
+             }
+             c.close();
+-            return memoList;
++            return listMemo;
+         }
+ 
+         if (sortType == IDBManager.SORT_DESC)
+@@ -90,10 +93,15 @@ public class MemoDBManager implements IDBManager<Memo>
+             memo.setModifyTime(c.getLong(c.getColumnIndex("time")));
+             memo.setContent(c.getString(c.getColumnIndex("content")));
+             memo.setId(c.getInt(c.getColumnIndex("_id")));
+-            memoList.add(memo);
++            listMemo.add(memo);
+         }
+         c.close();
+-        return memoList;
++        return listMemo;
++    }
++
++    public List<Memo> getMemoList()
++    {
++        return listMemo;
+     }
+ 
+     @Override
+diff --git a/app/src/main/java/com/eliot/notebook/memo/ui/MemoFragment.java b/app/src/main/java/com/eliot/notebook/memo/ui/MemoFragment.java
+index 6a5f1ad..52712ea 100644
+--- a/app/src/main/java/com/eliot/notebook/memo/ui/MemoFragment.java
++++ b/app/src/main/java/com/eliot/notebook/memo/ui/MemoFragment.java
+@@ -5,17 +5,14 @@ import android.os.Bundle;
+ import android.view.LayoutInflater;
+ import android.view.View;
+ import android.view.ViewGroup;
+-import android.view.animation.Animation;
+-import android.view.animation.AnimationUtils;
+-import android.view.animation.LayoutAnimationController;
+-import android.widget.AdapterView;
+ import android.widget.ImageButton;
+-import android.widget.ListView;
+ import android.widget.TextView;
+ 
+ import androidx.annotation.NonNull;
+ import androidx.annotation.Nullable;
+ import androidx.fragment.app.Fragment;
++import androidx.recyclerview.widget.RecyclerView;
++import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+ 
+ import com.eliot.notebook.R;
+ import com.eliot.notebook.common.database.IDBManager;
+@@ -35,13 +32,13 @@ import java.util.List;
+  */
+ public class MemoFragment extends Fragment
+ {
+-    List<Memo> memoList;                //备忘录数据列表
+-    ImageButton btn_memo_add;           //新建备忘录按钮
+-    IDBManager mDBManager;              //数据库操作对象
+-    ListView memo_list;                 //备忘录列表ListView
+-    TextView memoTextView;              //没有备忘录记录时的提示文本
++    List<Memo> listMemo;                //备忘录数据列表
++    ImageButton imageButtonAddMemo;           //新建备忘录按钮
++    MemoDBManager mMemoDBManager;           //数据库操作对象
++    RecyclerView recyclerViewMemo;             //备忘录列表RecyclerView
++    TextView textViewNoMemoHint;              //没有备忘录记录时的提示文本
+ 
+-    MemoItemAdapter mAdapter;
++    MemoItemAdapter mMemoItemAdapter;
+     @Nullable
+     @Override
+     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState)
+@@ -49,35 +46,14 @@ public class MemoFragment extends Fragment
+         View root =inflater.inflate(R.layout.fragment_memo, container, false);
+ 
+         //添加便签概略列表
+-        memo_list = root.findViewById(R.id.memo_list);
+-        memoTextView = root.findViewById(R.id.memo_text_view);
+-        mDBManager = new MemoDBManager(getContext());
+-        mDBManager.createTable();
+-
+-        //给listView添加点击事件监听
+-        memo_list.setOnItemClickListener(mOnItemClickListener);
+-        //给listView添加长按点击事件监听，长按时删除数据
+-        memo_list.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener()
+-        {
+-            @Override
+-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id)
+-            {
+-                Memo memo = (Memo) parent.getItemAtPosition(position);
+-                mDBManager.delete(memo);
+-                memoList.remove(position);
+-                mAdapter.notifyDataSetChanged();
+-                if (memoList.size() <= 0)
+-                {
+-                    memo_list.setVisibility(View.GONE);
+-                    memoTextView.setVisibility(View.VISIBLE);
+-                }
+-                return true;
+-            }
+-        });
++        recyclerViewMemo = root.findViewById(R.id.memo_list);
++        textViewNoMemoHint = root.findViewById(R.id.memo_text_view);
++        mMemoDBManager = new MemoDBManager(getContext());
++        mMemoDBManager.createTable();
+ 
+         //初始化新增备忘录按钮，并且设置点击事件：点击后跳转到编辑内容Activity
+-        btn_memo_add = root.findViewById(R.id.btn_memo_add);
+-        btn_memo_add.setOnClickListener(new View.OnClickListener()
++        imageButtonAddMemo = root.findViewById(R.id.btn_memo_add);
++        imageButtonAddMemo.setOnClickListener(new View.OnClickListener()
+         {
+             @Override
+             public void onClick(View v)
+@@ -87,6 +63,21 @@ public class MemoFragment extends Fragment
+             }
+         });
+ 
++        //设置RecyclerView的layoutManager为StaggeredGridLayoutManager（瀑布流）
++        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
++        recyclerViewMemo.setLayoutManager(layoutManager);
++
++        //获取数据库对象的指定List对象
++        listMemo = mMemoDBManager.getMemoList();
++        mMemoDBManager.query(null, IDBManager.SORT_DESC);               //查询数据库，更新数据库的List
++        //初始化列表显示
++        if (recyclerViewMemo != null && listMemo.size() > 0)
++        {
++            mMemoItemAdapter = new MemoItemAdapter(getContext(), listMemo);
++            mMemoItemAdapter.setOnClickListener(clickListener);
++            recyclerViewMemo.setAdapter(mMemoItemAdapter);
++        }
++
+         return root;
+     }
+ 
+@@ -94,45 +85,52 @@ public class MemoFragment extends Fragment
+     public void onResume()
+     {
+         super.onResume();
++        //在onResume调用更新列表函数
+         updateList();
+     }
+ 
+-    AdapterView.OnItemClickListener mOnItemClickListener = new AdapterView.OnItemClickListener()
+-    {
++    //添加item的点击事件（单击、长按）
++    MemoItemAdapter.ItemClickListener clickListener = new MemoItemAdapter.ItemClickListener() {
++
+         @Override
+-        public void onItemClick(AdapterView<?> parent, View view, int position, long id)
+-        {
++        public void onSingleClick(MemoItemAdapter parent, int position) {
+             //点击后直接跳转到内容编辑界面，并且将对应项的对象传递到下一个Activity
+             Intent intent = new Intent(getContext(), MemoContentActivity.class);
+-            intent.putExtra("memo", ((Memo)parent.getItemAtPosition(position)));
++            intent.putExtra("memo", parent.getMemoList().get(position));
+             startActivity(intent);
+         }
++
++        @Override
++        public void onLongClick(MemoItemAdapter parent, int position) {
++            //获取点击的列表项对应的对象，并将其从数据库删除
++            Memo memo = parent.getMemoList().get(position);
++            mMemoDBManager.delete(memo);
++            listMemo.remove(position);
++            mMemoItemAdapter.notifyDataSetChanged();
++            if (listMemo.size() <= 0)
++            {
++                recyclerViewMemo.setVisibility(View.GONE);
++                textViewNoMemoHint.setVisibility(View.VISIBLE);
++            }
++        }
+     };
+ 
+     //更新备忘录数据列表
+     public void updateList()
+     {
+-        memoList = mDBManager.query(null, IDBManager.SORT_DESC);
+-        if (memoList != null && memoList.size() > 0)
++        //调用数据库查询功能更新List
++        mMemoDBManager.query(null, IDBManager.SORT_DESC);
++        if (listMemo != null && listMemo.size() > 0)
+         {
+-            mAdapter = new MemoItemAdapter(getContext(), R.layout.memo_item, memoList);
+-            memo_list.setAdapter(mAdapter);
+-            memo_list.setVisibility(View.VISIBLE);
+-            memoTextView.setVisibility(View.GONE);
++            mMemoItemAdapter.notifyDataSetChanged();                //使用notifyDataSetChanged更新列表，而不是重新setAdapter
++            recyclerViewMemo.setVisibility(View.VISIBLE);
++            textViewNoMemoHint.setVisibility(View.GONE);
+         }else
+         {
+             //无数据时显示提示文本
+-            memo_list.setVisibility(View.GONE);
+-            memoTextView.setVisibility(View.VISIBLE);
++            recyclerViewMemo.setVisibility(View.GONE);
++            textViewNoMemoHint.setVisibility(View.VISIBLE);
+         }
+-
+-        //为listview刷新添加布局显示动画
+-        Animation animation= AnimationUtils.loadAnimation(getContext(), R.anim.list_item_anim);         //获取对应动画
+-        LayoutAnimationController controller = new LayoutAnimationController(animation);                //得到一个动画对应的LayoutAnimationController对象；
+-        controller.setOrder(LayoutAnimationController.ORDER_NORMAL);                                    //设置控件显示的顺序；
+-        controller.setDelay((float) 0.3);                                                               //设置控件显示间隔时间；
+-        memo_list.setLayoutAnimation(controller);                                                       //为ListView设置LayoutAnimationController属性；
+-        memo_list.startLayoutAnimation();                                                               //启动布局动画
+     }
+ 
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/com/eliot/notebook/memo/ui/MemoItemAdapter.java b/app/src/main/java/com/eliot/notebook/memo/ui/MemoItemAdapter.java
+index 75633eb..b9ed667 100644
+--- a/app/src/main/java/com/eliot/notebook/memo/ui/MemoItemAdapter.java
++++ b/app/src/main/java/com/eliot/notebook/memo/ui/MemoItemAdapter.java
+@@ -4,11 +4,10 @@ import android.content.Context;
+ import android.view.LayoutInflater;
+ import android.view.View;
+ import android.view.ViewGroup;
+-import android.widget.ArrayAdapter;
+ import android.widget.TextView;
+ 
+ import androidx.annotation.NonNull;
+-import androidx.annotation.Nullable;
++import androidx.recyclerview.widget.RecyclerView;
+ 
+ import com.eliot.notebook.R;
+ import com.eliot.notebook.common.Utils;
+@@ -20,49 +19,99 @@ import java.util.List;
+  * @ProjectName: NoteBook
+  * @Package: com.eliot.notebook.memo.ui
+  * @ClassName: MemoItemAdapter
+- * @Description: 备忘录概述列表ListView自定义adapter
++ * @Description: 备忘录概述列表RecyclerView自定义adapter
+  * @Author: Eliot-Aaaa
+  * @CreateDate: 2020/7/21 11:29
+  */
+-public class MemoItemAdapter extends ArrayAdapter
++public class MemoItemAdapter extends RecyclerView.Adapter<MemoItemAdapter.MemoItemViewHolder>
+ {
+-    public MemoItemAdapter(@NonNull Context context, int resource, List<Memo> object)
++    final int CONTENT_SIZE_LIMIT = 28;                              //列表显示文字内容限制的字数
++
++    List<Memo> mListMemo;
++    Context mContext;
++    ItemClickListener mItemClickListener;
++
++    public MemoItemAdapter(Context context, List<Memo> memoList)
+     {
+-        super(context, resource, object);
++        this.mContext = context;
++        this.mListMemo = memoList;
+     }
+ 
+     @NonNull
+     @Override
+-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent)
++    public MemoItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
++        final View root = LayoutInflater.from(mContext).inflate(R.layout.memo_item, parent, false);
++        return new MemoItemViewHolder(root);
++    }
++
++    @Override
++    public void onBindViewHolder(@NonNull final MemoItemViewHolder holder, final int position) {
++        Memo memo = mListMemo.get(position);
++        String contentStr = memo.getContent();
++        long timeUs = memo.getModifyTime();
++        holder.textViewContentText.setText(formatContent(contentStr));
++        holder.textViewTimeText.setText(Utils.getCurrentTime(timeUs));
++
++        //将View添加监听事件，并且绑定到自定义接口
++        holder.itemView.setOnClickListener(new View.OnClickListener() {
++            @Override
++            public void onClick(View v) {
++                if (mItemClickListener != null)
++                    mItemClickListener.onSingleClick(MemoItemAdapter.this, position);
++            }
++        });
++
++        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
++            @Override
++            public boolean onLongClick(View v) {
++                if (mItemClickListener != null)
++                    mItemClickListener.onLongClick(MemoItemAdapter.this, position);
++                return true;
++            }
++        });
++    }
++
++    @Override
++    public int getItemCount() {
++        return mListMemo.size();
++    }
++
++    public List<Memo> getMemoList()
+     {
+-        String content = ((Memo) getItem(position)).getContent();
+-        content = formatContent(content);
+-        long time = ((Memo)getItem(position)).getModifyTime();
+-        View root = LayoutInflater.from(getContext()).inflate(R.layout.memo_item, null);
+-        TextView content_text = root.findViewById(R.id.item_memo_content_text);
+-        content_text.setText(content);
+-        TextView time_text = root.findViewById(R.id.item_memo_time_text);
+-        time_text.setText(Utils.getCurrentTime(time));
+-        return root;
++        return mListMemo;
+     }
+ 
+-    private String formatContent(String src)
++    public class MemoItemViewHolder extends RecyclerView.ViewHolder
+     {
+-        //搜索回车键
+-        int firstEnterKeyIndex = src.indexOf("\n");
+-        if (firstEnterKeyIndex >= 0 && firstEnterKeyIndex < 16)
+-        {
+-            //说明存在回车键，截取第一个回车前的部分字符串
+-            String str = src.substring(0, firstEnterKeyIndex);
+-            if (firstEnterKeyIndex == 0)
+-                return str;
+-            else
+-                return str + " ...";
++        TextView textViewContentText, textViewTimeText;
++        public MemoItemViewHolder(@NonNull View itemView) {
++            super(itemView);
++            textViewContentText = itemView.findViewById(R.id.item_memo_content_text);
++            textViewTimeText = itemView.findViewById(R.id.item_memo_time_text);
+         }
+-        else if (src.length() > 15)
++    }
++
++    //定义一个监听器注册函数，将自定义监听接口注册上
++    public void setOnClickListener(ItemClickListener itemClickListener)
++    {
++        this.mItemClickListener = itemClickListener;
++    }
++
++    //自定义单击和长按事件接口
++    public interface ItemClickListener
++    {
++        public abstract void onSingleClick(MemoItemAdapter parent, int position);
++
++        public abstract void onLongClick(MemoItemAdapter parent, int position);
++    }
++
++    //内容长度限制，根据CONTENT_SIZE_LIMIT限制显示的内容字数
++    private String formatContent(@NonNull String src)
++    {
++        if (src.length() > CONTENT_SIZE_LIMIT)
+         {
+             //字符串过长，截取部分显示
+-            String str = src.substring(0, 15);
++            String str = src.substring(0, CONTENT_SIZE_LIMIT);
+             return str + " ...";
+         }
+         return src;
+diff --git a/app/src/main/res/drawable/memo_item_background.xml b/app/src/main/res/drawable/memo_item_background.xml
+index 5db1b84..094e607 100644
+--- a/app/src/main/res/drawable/memo_item_background.xml
++++ b/app/src/main/res/drawable/memo_item_background.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <shape xmlns:android="http://schemas.android.com/apk/res/android">
+-    <gradient android:startColor="#4F00EE28" android:endColor="#03DAC8"/>
++    <stroke android:color="#D5D5D5" android:width="1.5dp"/>
+     <corners android:radius="5dp"/>
+ </shape>
+\ No newline at end of file
+diff --git a/app/src/main/res/layout/fragment_memo.xml b/app/src/main/res/layout/fragment_memo.xml
+index 6fdec5a..68d103c 100644
+--- a/app/src/main/res/layout/fragment_memo.xml
++++ b/app/src/main/res/layout/fragment_memo.xml
+@@ -3,10 +3,9 @@
+     android:layout_width="match_parent"
+     android:layout_height="match_parent">
+ 
+-    <ListView
++    <androidx.recyclerview.widget.RecyclerView
+         android:id="@+id/memo_list"
+         android:paddingTop="?attr/actionBarSize"
+-        android:divider="@null"
+         android:dividerHeight="10dp"
+         android:paddingLeft="10dp"
+         android:paddingRight="10dp"
+diff --git a/app/src/main/res/layout/memo_item.xml b/app/src/main/res/layout/memo_item.xml
+index 1f1a980..605caa8 100644
+--- a/app/src/main/res/layout/memo_item.xml
++++ b/app/src/main/res/layout/memo_item.xml
+@@ -1,27 +1,32 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+-    android:layout_height="70dp"
++    android:layout_height="wrap_content"
++    android:layout_marginTop="10dp"
++    android:layout_marginLeft="10dp"
+     android:background="@drawable/memo_item_background"
+-    android:minHeight="70dp"
+     >
+ 
+     <TextView
+         android:id="@+id/item_memo_content_text"
+         android:textSize="25sp"
+         android:layout_alignParentTop="true"
+-        android:paddingLeft="10dp"
++        android:paddingLeft="20dp"
++        android:paddingTop="10dp"
++        android:textColor="#000000"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         />
+ 
+     <TextView
+         android:id="@+id/item_memo_time_text"
+-        android:textSize="15sp"
+-        android:layout_alignParentBottom="true"
+-        android:paddingLeft="10dp"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+-        />
++        android:layout_below="@+id/item_memo_content_text"
++        android:layout_alignParentBottom="true"
++        android:paddingLeft="20dp"
++        android:paddingTop="10dp"
++        android:textColor="#000000"
++        android:textSize="15sp" />
+ 
+ </RelativeLayout>
+\ No newline at end of file
