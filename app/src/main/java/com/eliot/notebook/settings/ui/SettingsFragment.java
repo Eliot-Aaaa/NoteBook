@@ -1,5 +1,6 @@
 package com.eliot.notebook.settings.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.eliot.notebook.R;
+import com.eliot.notebook.settings.UserInformationActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +45,7 @@ public class SettingsFragment extends Fragment {
         //添加列表所需要显示的Title List
         if (listSettingTitle == null)
             listSettingTitle = new ArrayList<>();
-        listSettingTitle.add("头像");
-        listSettingTitle.add("签名");
+        listSettingTitle.add("个人资料");
 
         //绑定Title List和Adapter
         mSettingsItemAdapter = new SettingsItemAdapter(getContext(), listSettingTitle);
@@ -58,6 +59,11 @@ public class SettingsFragment extends Fragment {
     SettingsItemAdapter.ItemClickListener itemClickListener = new SettingsItemAdapter.ItemClickListener() {
         @Override
         public void onSingleClick(SettingsItemAdapter parent, int position) {
+            if (listSettingTitle.get(position).equals("个人资料"))
+            {
+                Intent intent = new Intent(getActivity(), UserInformationActivity.class);
+                startActivity(intent);
+            }
         }
     };
 }

@@ -18,6 +18,8 @@
         </activity>
 
         <activity android:name=".memo.MemoContentActivity"></activity>
+
+        <activity android:name=".settings.UserInformationActivity"></activity>
     </application>
 
 </manifest>

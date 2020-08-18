@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">NoteBook</string>
+    <string name="shared_preference_name">notebook</string>
 </resources>

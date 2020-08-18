@@ -1,34 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="176dp"
-    android:background="@drawable/side_nav_bar">
+    android:layout_height="match_parent">
 
     <ImageView
-        android:id="@+id/image_view_navigation_header_user_portrait"
+        android:id="@+id/image_view_user_information_user_portrait"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@mipmap/ic_launcher"
         android:layout_centerHorizontal="true"
         />
 
-    <TextView
-        android:id="@+id/text_view_navigation_header_user_name"
+    <EditText
+        android:id="@+id/edit_text_user_information_user_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_below="@id/image_view_navigation_header_user_portrait"
+        android:layout_below="@id/image_view_user_information_user_portrait"
         android:padding="15dp"
         android:text="Eliot"
         />
 
-    <TextView
-        android:id="@+id/text_view_navigation_header_user_desc"
+    <EditText
+        android:id="@+id/edit_text_user_information_user_desc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/text_view_navigation_header_user_name"
+        android:layout_below="@id/edit_text_user_information_user_name"
         android:padding="15dp"
         android:text="Happy Every Day!"
         />
+
+    <Button
+        android:id="@+id/button_user_information_save_information"
+        android:text="保存修改"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
 </RelativeLayout>
