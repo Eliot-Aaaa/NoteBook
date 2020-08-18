@@ -15,3 +15,5 @@ commit-11:将listView更换为RecyclerView，使用瀑布流StaggeredGridLayoutM
 commit-12:为RecyclerView添加进场动画，同时使用DefaultItemAnimator添加删除item的简单动画，效果见Pic/commit-12.gif
 
 commit-13:添加增加item时的动画，在编辑界面退出时显示增加item的动画，效果图见Pic/commit-13.gif
+
+commit-14:在抽屉栏里添加设置选项，效果图见Pic/commit-14.gif

@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.navigation_fragment_memo, R.id.navigation_fragment_diary)
+                R.id.navigation_fragment_memo, R.id.navigation_fragment_diary, R.id.navigation_fragment_settings)
                 .setDrawerLayout(drawer)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.navigation_host_fragment);

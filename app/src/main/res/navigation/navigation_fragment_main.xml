@@ -21,4 +21,12 @@
 
     </fragment>
 
+    <fragment
+        android:id="@+id/navigation_fragment_settings"
+        android:name="com.eliot.notebook.settings.ui.SettingsFragment"
+        android:label="设置"
+        tools:layout="@layout/fragment_settings">
+
+    </fragment>
+
 </navigation>
