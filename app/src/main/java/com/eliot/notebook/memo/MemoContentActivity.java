@@ -123,10 +123,16 @@ public class MemoContentActivity extends AppCompatActivity
             case R.id.memo_content_save:
                 //如果是新增备忘录动作，则调用新增备忘录函数
                 if (action == Constants.MEMO_ACTION_NEW)
+                {
                     saveContent();
+                    setResult(Constants.RESULT_CODE_ADD_NEW_CONTENT);
+                }
+
                 //如果是修改备忘录动作，则调用修改备忘录函数
-                else if (action == Constants.MEMO_ACTION_UPDATE)
+                else if (action == Constants.MEMO_ACTION_UPDATE) {
                     updateContent(memo);
+                    setResult(Constants.RESULT_CODE_MODIFY_CONTENT);
+                }
                 break;
             default:
                 break;
@@ -144,6 +150,12 @@ public class MemoContentActivity extends AppCompatActivity
         //设置重做按钮的显示状态：可用或者不可用
         menu.findItem(R.id.memo_content_redo).setEnabled(showingRedoButton);
         return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public void onBackPressed() {
+        //捕获返回键事件，返回时退出当前界面
+        finish();
     }
 
     //文本监视器

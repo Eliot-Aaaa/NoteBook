@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.eliot.notebook.R;
+import com.eliot.notebook.common.Constants;
 import com.eliot.notebook.common.database.IDBManager;
 import com.eliot.notebook.memo.MemoContentActivity;
 import com.eliot.notebook.memo.database.MemoDBManager;
@@ -40,6 +41,10 @@ public class MemoFragment extends Fragment
     TextView textViewNoMemoHint;              //没有备忘录记录时的提示文本
 
     MemoItemAdapter mMemoItemAdapter;
+
+    boolean isAddNewMemo = false;
+    boolean isModifyMemo = false;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState)
@@ -60,7 +65,7 @@ public class MemoFragment extends Fragment
             public void onClick(View v)
             {
                 Intent intent = new Intent(getContext(), MemoContentActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, Constants.REQUEST_CODE_ADD_NEW_CONTENT);
             }
         });
 
@@ -96,6 +101,17 @@ public class MemoFragment extends Fragment
         updateList();
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == Constants.REQUEST_CODE_ADD_NEW_CONTENT && (resultCode == Constants.RESULT_CODE_ADD_NEW_CONTENT || resultCode == Constants.RESULT_CODE_MODIFY_CONTENT))
+        {
+            isAddNewMemo = true;
+        }else if (requestCode == Constants.REQUEST_CODE_MODIFY_CONTENT && resultCode == Constants.RESULT_CODE_MODIFY_CONTENT)
+        {
+            isModifyMemo = true;
+        }
+    }
+
     //添加item的点击事件（单击、长按）
     MemoItemAdapter.ItemClickListener clickListener = new MemoItemAdapter.ItemClickListener() {
 
@@ -104,7 +120,7 @@ public class MemoFragment extends Fragment
             //点击后直接跳转到内容编辑界面，并且将对应项的对象传递到下一个Activity
             Intent intent = new Intent(getContext(), MemoContentActivity.class);
             intent.putExtra("memo", parent.getMemoList().get(position));
-            startActivity(intent);
+            startActivityForResult(intent, Constants.REQUEST_CODE_MODIFY_CONTENT);
         }
 
         @Override
@@ -130,16 +146,30 @@ public class MemoFragment extends Fragment
     {
         //调用数据库查询功能更新List
         mMemoDBManager.query(null, IDBManager.SORT_DESC);
-        if (listMemo != null && listMemo.size() > 0)
+        if (isAddNewMemo)
         {
-            mMemoItemAdapter.notifyDataSetChanged();                //使用notifyDataSetChanged更新列表，而不是重新setAdapter
-            recyclerViewMemo.setVisibility(View.VISIBLE);
-            textViewNoMemoHint.setVisibility(View.GONE);
-        }else
+            mMemoItemAdapter.notifyItemInserted(0);
+            recyclerViewMemo.scrollToPosition(0);
+            mMemoItemAdapter.notifyItemRangeChanged(0, listMemo.size());            //更新position，避免出现position错位的问题
+            isAddNewMemo = false;
+        }
+        else if (isModifyMemo)
         {
-            //无数据时显示提示文本
-            recyclerViewMemo.setVisibility(View.GONE);
-            textViewNoMemoHint.setVisibility(View.VISIBLE);
+            mMemoItemAdapter.notifyDataSetChanged();
+            isModifyMemo = false;
+        }
+        else {
+            if (listMemo != null && listMemo.size() > 0)
+            {
+                mMemoItemAdapter.notifyDataSetChanged();                //使用notifyDataSetChanged更新列表，而不是重新setAdapter
+                recyclerViewMemo.setVisibility(View.VISIBLE);
+                textViewNoMemoHint.setVisibility(View.GONE);
+            }else
+            {
+                //无数据时显示提示文本
+                recyclerViewMemo.setVisibility(View.GONE);
+                textViewNoMemoHint.setVisibility(View.VISIBLE);
+            }
         }
     }
 
