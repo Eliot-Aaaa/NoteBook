@@ -4,28 +4,57 @@
     android:layout_height="match_parent">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/memo_list"
+        android:id="@+id/recycler_view_memo_list"
+        android:layout_alignParentTop="true"
+        android:layout_above="@id/layout_memo_select_menu"
         android:layoutAnimation="@anim/entrance_memo_list"
         android:paddingTop="?attr/actionBarSize"
-        android:dividerHeight="10dp"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="wrap_content"/>
 
     <ImageButton
-        android:id="@+id/btn_memo_add"
+        android:id="@+id/image_button_memo_add_new"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginRight="30dp"
+        android:layout_marginBottom="30dp"
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
-        android:src="@android:drawable/ic_input_add" />
+        android:background="@drawable/ic_add"
+         />
 
     <TextView
-        android:id="@+id/memo_text_view"
+        android:id="@+id/text_view_memo_no_memo_hint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:text="暂时没有备忘录~"/>
+
+    <LinearLayout
+        android:id="@+id/layout_memo_select_menu"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <ImageButton
+            android:id="@+id/image_button_select_menu_select_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/ic_select_all"
+            />
+
+        <ImageButton
+            android:id="@+id/image_button_select_menu_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:layout_centerInParent="true"
+            android:background="@drawable/ic_delete" />
+    </LinearLayout>
 
 </RelativeLayout>

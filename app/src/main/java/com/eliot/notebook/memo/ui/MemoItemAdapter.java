@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import com.eliot.notebook.R;
 import com.eliot.notebook.common.Utils;
 import com.eliot.notebook.memo.model.Memo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,17 +32,21 @@ public class MemoItemAdapter extends RecyclerView.Adapter<MemoItemAdapter.MemoIt
     List<Memo> mListMemo;
     Context mContext;
     ItemClickListener mItemClickListener;
+    List<Integer> listSelected;
+
+    boolean isSelecting;
 
     public MemoItemAdapter(Context context, List<Memo> memoList)
     {
         this.mContext = context;
         this.mListMemo = memoList;
+        listSelected = new ArrayList<>();
     }
 
     @NonNull
     @Override
     public MemoItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        final View root = LayoutInflater.from(mContext).inflate(R.layout.memo_item, parent, false);
+        final View root = LayoutInflater.from(mContext).inflate(R.layout.item_memo, parent, false);
         return new MemoItemViewHolder(root);
     }
 
@@ -51,6 +57,24 @@ public class MemoItemAdapter extends RecyclerView.Adapter<MemoItemAdapter.MemoIt
         long timeUs = memo.getModifyTime();
         holder.textViewContentText.setText(formatContent(contentStr));
         holder.textViewTimeText.setText(Utils.getCurrentTime(timeUs));
+
+        if (isSelecting)
+        {
+            holder.checkButton.setVisibility(View.VISIBLE);
+            holder.checkButton.setImageResource(R.drawable.ic_button_unchecked);
+            for (int i = 0; i < listSelected.size(); i++)
+            {
+                if (listSelected.get(i) == position)
+                {
+                    holder.checkButton.setImageResource(R.drawable.ic_button_check);
+                    continue;
+                }
+            }
+        }
+        else
+        {
+            holder.checkButton.setVisibility(View.GONE);
+        }
 
         //将View添加监听事件，并且绑定到自定义接口
         holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -81,13 +105,32 @@ public class MemoItemAdapter extends RecyclerView.Adapter<MemoItemAdapter.MemoIt
         return mListMemo;
     }
 
+    public void setSelecting(boolean isSelecting)
+    {
+        this.isSelecting = isSelecting;
+    }
+
+    public boolean getSelecting()
+    {
+        return isSelecting;
+    }
+
+    public List<Integer> getListSelected()
+    {
+        if (listSelected == null)
+            listSelected = new ArrayList<>();
+        return listSelected;
+    }
+
     public class MemoItemViewHolder extends RecyclerView.ViewHolder
     {
         TextView textViewContentText, textViewTimeText;
+        ImageView checkButton;
         public MemoItemViewHolder(@NonNull View itemView) {
             super(itemView);
             textViewContentText = itemView.findViewById(R.id.item_memo_content_text);
             textViewTimeText = itemView.findViewById(R.id.item_memo_time_text);
+            checkButton = itemView.findViewById(R.id.image_view_item_memo_check_button);
         }
     }
 
